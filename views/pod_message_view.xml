@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="pos_message_form_view" model="ir.ui.view">
+        <field name="name">pos.message.form</field>
+        <field name="model">pos.message</field>
+        <field name="arch" type="xml">
+            <form>
+                <sheet>
+                    <group>
+                        <field name="title"/>
+                        <field name="message"/>
+                    </group>
+                    <notebook>
+                        <page string="All Point">
+                            <field name="pos_config_ids" widget="one2many">
+                                <tree editable="bottom">
+                                    <field name="name" string="Point of Sale Name"/>
+                                </tree>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+    <record id="pos_message_tree_view" model="ir.ui.view">
+        <field name="name">pos.message.tree</field>
+        <field name="model">pos.message</field>
+        <field name="view_type">form</field>
+        <field name="help" type="html">
+            <p class="oe_view_nocontent_create">
+                <!-- Add Text Here -->
+                Create your first message!
+            </p>
+            <p>
+                <!-- More details about what a user can do with this object will be OK -->
+            </p>
+        </field>
+        <!--        <field name="arch" type="xml">-->
+        <!--            <form>-->
+        <!--                <tree>-->
+
+        <!--                    <field name="title"/>-->
+        <!--                    <field name="message"/>-->
+        <!--                    <field name="message_time"/>-->
+        <!--                    <field name="pos_config_ids"/>-->
+        <!--                </tree>-->
+        <!--            </form>-->
+        <!--        </field>-->
+    </record>
+    <record id="pos_message_action" model="ir.actions.act_window">
+        <field name="name">POS Message</field>
+        <field name="res_model">pos.message</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <!--    Nằm trong dropdown menu_point_config_product -->
+    <menuitem id="pos_menu_message_configuration"
+              name="Messages"
+              action="pos_message_action"
+              parent="point_of_sale.menu_point_config_product"
+              sequence="16"/>
+</odoo>
