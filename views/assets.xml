@@ -2,7 +2,7 @@
 <odoo>
     <template id="pos_message_assets" inherit_id="point_of_sale.assets">
         <xpath expr="." position="inside">
-            <script type="text/javascript" src="/pos_message/static/src/js/popups.js"></script>
+            <script type="text/javascript" src="/pos_message/static/src/js/message.js"></script>
         </xpath>
     </template>
 

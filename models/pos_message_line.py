@@ -13,3 +13,11 @@ class PosMessageLine(models.Model):
     pos_message_id = fields.Many2one(
         'pos.message',
         string=_('Message'))
+
+    @api.model
+    def create_from_ui(self, table):
+        # Update dữ liệu từ api
+        table_id = table.pop('id', False)
+        if table_id:
+            self.browse(table_id).write(table)
+        return table_id
