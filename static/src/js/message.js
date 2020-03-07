@@ -2,34 +2,41 @@ odoo.define("pos_message.message", function (require) {
     "use strict";
     let rpc = require('web.rpc');
     let chrome = require('point_of_sale.chrome');
+    let models = require('point_of_sale.models');
 
     // Model check data
     // Không cần thiết phải khai báo load model vì message không cần phải load cùng hệ thống
-    // models.load_models({
-    //     model: 'pos.message',
-    //     fields: ['name', 'message'],
-    //     domain: function (self) {
-    //         return [{'pos_message_line_ids': ['pos_config_id', '=', self.config.id]}]
-    //     }
-    // });
+    models.load_models({
+        model: 'pos.message',
+        fields: ['name', 'message'],
+        domain: function (self) {
+            return [['pos_message_line_ids.pos_config_id', '=', self.config.id]]
+        }, loaded: function (self, messages) {
+            if (messages.length > 0) {
+                self.message = messages[0];
+            }
+        }
+    });
 
-
+    let _super_posmodel = models.PosModel.prototype;
+    models.PosModel = models.PosModel.extend({
+        initialize: function (session, attributes) {
+            this.message = null;
+            return _super_posmodel.initialize.call(this, session, attributes);
+        },
+        // check_message: function () {
+        //
+        // }
+    });
     //HOOK chrome
     chrome.OrderSelectorWidget.include({
-        check_message: async function () {
+        get_message: async function () {
+            // let domain = [['id', '=', message_id]];
             let self = this;
             let time_now = moment().format('YYYY-MM-DDTHH:mm:ss');
-            let domain = [['pos_config_id', '=', self.pos.config.id], ['is_read', '=', false], ['pos_message_id.message_time', '<', time_now]];
-            let fields = ['pos_message_id'];
-            return await rpc.query({
-                model: 'pos.message.line',
-                method: 'search_read',
-                args: [domain, fields],
-                limit: 1,
-            });
-        },
-        get_message: async function (message_id) {
-            let domain = [['id', '=', message_id]];
+            let domain = [['pos_message_line_ids.pos_config_id', '=', self.pos.config.id],
+                ['message_time', '<', time_now],
+                ['pos_message_line_ids.is_read', '=', false]];
             let fields = ['name', 'message'];
             return await rpc.query({
                 model: 'pos.message',
@@ -38,43 +45,48 @@ odoo.define("pos_message.message", function (require) {
                 limit: 1,
             });
         },
-        confirm_message: async function (message_line_id) {
+        confirm_message: async function (message_id, pos_config_id) {
             return await rpc.query({
                 model: 'pos.message.line',
                 method: 'create_from_ui',
-                args: [{'is_read': true, 'id': message_line_id}],
+                args: [{'is_read': true, 'message_id': message_id, 'pos_config_id': pos_config_id}],
             });
         },
-        show_message_handler: async function () {
+        show_message_handler: async function (is_neworder = false) {
             let self = this;
-            let message_line = await self.check_message();
-            if (message_line.length > 0) {
-                let message = await self.get_message(message_line[0].pos_message_id[0]);
-                if (message.length > 0) {
-                    this.gui.show_popup('confirm', {
-                        'title': message[0].name,
-                        'body': message[0].message,
-                        'confirm': async function () {
-                            await self.confirm_message(message_line[0].id);
+            let message = await self.get_message();
+            console.log(message);
+            if (message.length > 0) {
+                this.gui.show_popup('confirm', {
+                    'title': message[0].name,
+                    'body': message[0].message,
+                    'confirm': async function () {
+                        let ok = await self.confirm_message(message[0].id, self.pos.config.id);
+                        if (ok) {
+                            window.location.reload();
+                        } else {
+                            self.pod_order_action(is_neworder);
                         }
-                    });
-                }
+                    },
+                    'cancel': function () {
+                        self.pod_order_action(is_neworder);
+                    }
+                });
+            } else {
+                self.pod_order_action(is_neworder);
             }
         },
-        neworder_click_handler: async function (event, $el) {
-            //CHECK MESSAGE HERE....!
+        pod_order_action: function (is_neworder = false) {
             let self = this;
-            //Check message
-            await self.show_message_handler();
-            //Continue old code
-            self.pos.add_new_order();
+            if (is_neworder) {
+                self.pos.add_new_order();
+            } else {
+                self.pos_delete_order_old()
+            }
         },
-        deleteorder_click_handler: async function () {
-            let self = this;
-            //Check message
-            await this.show_message_handler();
-            //Continue old code
+        pos_delete_order_old: function (event, $el) {
             let order = this.pos.get_order();
+            let self = this;
             if (!order) {
                 return;
             } else if (!order.is_empty()) {
@@ -88,6 +100,20 @@ odoo.define("pos_message.message", function (require) {
             } else {
                 self.pos.delete_current_order();
             }
+        },
+        neworder_click_handler: async function (event, $el) {
+            //CHECK MESSAGE HERE....!
+            let self = this;
+            //Check message
+            await self.show_message_handler(true);
+            //Continue old code
+        },
+        deleteorder_click_handler: async function (event, $el) {
+            let self = this;
+            //Check message
+            await self.show_message_handler();
         }
-    });
-});
+    })
+    ;
+})
+;
