@@ -11,6 +11,9 @@
     'depends': ['base', 'point_of_sale'],
     'license': 'AGPL-3',
     'data': [
+        # SECURITY
+        'security/ir.model.access.csv',
+        # Assets AND VIEW
         'views/assets.xml',
         'views/pod_message_view.xml'
     ],
