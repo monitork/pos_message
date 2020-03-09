@@ -32,9 +32,9 @@ odoo.define("pos_message.message", function (require) {
     models.PosModel = models.PosModel.extend({
         get_message: async function () {
             // let domain = [['id', '=', message_id]];
-            let self = this;
+            var self = this;
             let time_now = moment().format('YYYY-MM-DDTHH:mm:ss');
-            let domain = [['pos_message_line_ids.pos_config_id', '=', self.pos.config.id],
+            let domain = [['pos_message_line_ids.pos_config_id', '=', self.config.id],
                 ['message_time', '<', time_now],
                 ['pos_message_line_ids.is_read', '=', false]];
             let fields = ['name', 'message'];
@@ -83,13 +83,13 @@ odoo.define("pos_message.message", function (require) {
     chrome.OrderSelectorWidget.include({
         show_message_handler: async function (is_neworder = false) {
             let self = this;
-            let message = await self.get_message();
+            let message = await self.pos.get_message();
             if (message.length > 0) {
                 self.gui.show_popup('confirm', {
                     'title': message[0].name,
                     'body': message[0].message,
                     'confirm': async function () {
-                        let ok = await self.confirm_message(message[0].id, self.pos.config.id);
+                        let ok = await self.pos.confirm_message(message[0].id, self.pos.config.id);
                         if (ok) {
                             window.location.reload();
                         } else {
